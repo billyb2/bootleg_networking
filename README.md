@@ -40,10 +40,13 @@ const MESSAGE_SETTINGS: MessageChannelSettings = MessageChannelSettings {
 fn main() {
     let mut app = App::new();
     app
+    .add_plugins(MinimalPlugins)
     .add_plugin(NetworkingPlugin)
     .add_startup_system(setup)
     .add_system(send)
     .add_system(receive);
+
+    app.run();
 }
 
 fn setup(mut commands: Commands, tokio_rt: Res<Runtime>, task_pool: Res<IoTaskPool>) {
