@@ -85,7 +85,7 @@ fn setup(mut commands: Commands, tokio_rt: Res<Runtime>, task_pool: Res<IoTaskPo
             .unwrap();
     });
 
-    /// Finally, insert the network resource so it can be used by other systems
+    // Finally, insert the network resource so it can be used by other systems
     commands.insert_resource(net);
 
 }
@@ -109,6 +109,8 @@ fn receive(mut net: ResMut<NetworkResource>) {
 }
 ```
 
+## If the crate isn't published on crates.io, how do I view the documentation?
+Simply run `cargo doc` in the terminal. If you want to view the documentation for the web version of this crate, then run `cargo doc --no-default-features --features web`
 
 ## Why make this crate
 While working with the wonderful bevy_networking_turbulence library, I realized that I wasn't able to create network clients on anything other than wasm. While it is doable using the fantastic new WebRTC-rs library (and I [even attempted it](https://github.com/naia-rs/naia-socket/pull/46), it still currently isn't possible. After a lot of effort, I eventually gave up, and decided instead to write this library. While initially, it was just for internal use in a project I'm workin on, I realized that it would have a lot of potential as a public library.
