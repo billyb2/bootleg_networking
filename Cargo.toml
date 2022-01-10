@@ -19,6 +19,9 @@ turbulence = { git = "https://github.com/billyb2/turbulence", branch = "v3_clone
 # For creating an interface to the TCP cli/serv
 net_native = { path = "net_native" }
 
+[dev-dependencies]
+bevy = { version = "0.6", default-features = false }
+
 [features]
 default = ["native"]
 native = [

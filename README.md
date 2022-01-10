@@ -6,14 +6,14 @@ A networking plugin for the Bevy game engine that wraps around bevy_networking_t
 ## Getting started
 Currently, the library is not published on crates.io, due to a few forks of other popular libraries it currently uses. Because of this, in order to use the libary, you must specify it as a git dependency
 
-```
+```toml
 [dependencies]
 bootleg_networking = { git = "https://github.com/billyb2/bootleg_networking" }
 ```
 
 If you want to use this library with wasm, you should disable the native feature and enable the web feature
 
-```
+```toml
 [dependencies]
 bootleg_networking = { git = "https://github.com/billyb2/bootleg_networking", default-features = false, features = ["web"]}
 ```
@@ -46,7 +46,8 @@ fn main() {
     .add_system(send)
     .add_system(receive);
 
-    app.run();
+    //Uncomment the line below!
+    //app.run();
 }
 
 fn setup(mut commands: Commands, tokio_rt: Res<Runtime>, task_pool: Res<IoTaskPool>) {
