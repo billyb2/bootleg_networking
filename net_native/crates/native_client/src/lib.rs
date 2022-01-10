@@ -1,3 +1,5 @@
+#![deny(clippy::all)]
+
 use std::net::{SocketAddrV4, Ipv4Addr};
 use std::sync::Arc;
 use std::fmt::Debug;
@@ -42,7 +44,6 @@ impl NativeClient {
 impl NativeResourceTrait for NativeClient {
     fn setup(&mut self, tcp_addr: impl ToSocketAddrs + Send + Clone + 'static, udp_addr: impl ToSocketAddrs + Send + Clone + 'static, max_packet_size: usize) {
         let m_queue = Arc::clone(&self.unprocessed_messages);
-        let m_queue_2 = Arc::clone(&self.unprocessed_messages);
 
         let task_pool = Arc::clone(&self.task_pool);
         let task_pool_2 = Arc::clone(&self.task_pool);
@@ -88,8 +89,8 @@ impl NativeResourceTrait for NativeClient {
             };
 
             task_pool.spawn(send_loop);
-            // Only one possible connection means that I can just make SuperConnectionHandle a constant
-            let handle = SuperConnectionHandle::new_native(ConnID {
+            // Only one possible connection means that I can just make ConnectionHandle a constant
+            let handle = ConnectionHandle::new_native(ConnID {
                 uuid: 0,
                 addr: peer_addr.unwrap(),
                 mode: NativeConnectionType::Tcp,
@@ -119,12 +120,12 @@ impl NativeResourceTrait for NativeClient {
                         match err.kind() {
                             ErrorKind::BrokenPipe | ErrorKind::ConnectionRefused => {
                                 // Should gracefully close connection and shutdown tokio task
-                                req_destroy_cli.clone().send(());
+                                req_destroy_cli.clone().send(()).unwrap();
                                 break;
                             },
                             // Any other errors should also close the connection, and shutdown the tokio task
                             _ => {
-                                req_destroy_cli.clone().send(());
+                                req_destroy_cli.clone().send(()).unwrap();
                                 break;
                             },
 
@@ -165,7 +166,7 @@ impl NativeResourceTrait for NativeClient {
 
                     let byte_vec = msg_buffer.to_vec();
 
-                    messages.push((SuperConnectionHandle::new_native(ConnID::new(0, udp_addr.clone(), NativeConnectionType::Udp)), byte_vec));
+                    messages.push((ConnectionHandle::new_native(ConnID::new(0, udp_addr.clone(), NativeConnectionType::Udp)), byte_vec));
 
 
                 }

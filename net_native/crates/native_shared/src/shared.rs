@@ -1,3 +1,5 @@
+#![deny(clippy::all)]
+
 // Some code that's needed by both net_native and super_net
 use std::net::SocketAddr;
 
@@ -70,51 +72,52 @@ impl From<MessageTypeUnregistered> for ChannelProcessingError {
     }
 }
 
+/// A connection handler built to use both native and naia handles
 #[derive(Clone, Debug)]
-pub enum SuperConnectionHandle {
+pub enum ConnectionHandle {
     Native(ConnID),
     Naia(u32),
 }
 
-impl SuperConnectionHandle {
+impl ConnectionHandle {
     pub const fn new_native(conn_id: ConnID) -> Self {
-        SuperConnectionHandle::Native(conn_id)
+        ConnectionHandle::Native(conn_id)
 
     }
 
     pub const fn new_naia(handle: u32) -> Self {
-        SuperConnectionHandle::Naia(handle)
+        ConnectionHandle::Naia(handle)
 
     }
 
     pub fn native(&self) -> &ConnID {
         match *self {
-            SuperConnectionHandle::Native(ref id) => id,
-            SuperConnectionHandle::Naia(_) => panic!("Naia"),
+            ConnectionHandle::Native(ref id) => id,
+            ConnectionHandle::Naia(_) => panic!("Naia"),
 
         }
     }
 
     pub fn naia(&self) -> &u32 {
         match *self {
-            SuperConnectionHandle::Naia(ref handle) => handle,
-            SuperConnectionHandle::Native(_) => panic!("Native"),
+            ConnectionHandle::Naia(ref handle) => handle,
+            ConnectionHandle::Native(_) => panic!("Native"),
 
         }
     }
 
-    pub fn is_native(&self) -> bool {
+    pub const fn is_native(&self) -> bool {
         #[cfg(not(target_arch = "wasm32"))]
         match self {
-            SuperConnectionHandle::Native(_) => true,
-            SuperConnectionHandle::Naia(_) => false,
+            ConnectionHandle::Native(_) => true,
+            ConnectionHandle::Naia(_) => false,
         }
 
         #[cfg(target_arch = "wasm32")]
         false
     }
 
-    pub fn is_naia(&self) -> bool {
+    pub const fn is_naia(&self) -> bool {
         !self.is_native()
     }
 }
@@ -133,7 +136,7 @@ pub enum NativeConnectionType {
 }
 
 impl ConnID {
-    pub fn new(uuid: u32, addr: SocketAddr, mode: NativeConnectionType) -> Self {
+    pub const fn new(uuid: u32, addr: SocketAddr, mode: NativeConnectionType) -> Self {
         Self {
             uuid,
             addr,

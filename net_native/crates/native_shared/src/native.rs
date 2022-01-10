@@ -1,3 +1,5 @@
+#![deny(clippy::all)]
+
 use std::sync::Arc;
 use std::net::UdpSocket;
 
@@ -9,7 +11,7 @@ use crate::shared::*;
 pub use crate::logic::*;
 
 // Lists of binary messages, along with the handle of who sent it
-pub type RecvQueue = Arc<DashMap<MessageChannelID, Vec<(SuperConnectionHandle, Vec<u8>)>>>;
+pub type RecvQueue = Arc<DashMap<MessageChannelID, Vec<(ConnectionHandle, Vec<u8>)>>>;
 
 pub struct TcpCliConn {
     pub send_task: JoinHandle<()>,

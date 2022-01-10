@@ -1,3 +1,5 @@
+#![deny(clippy::all)]
+
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::fmt::Debug;
@@ -144,7 +146,7 @@ impl NativeResourceTrait for NativeServer {
 
                 let byte_vec = msg_buffer.to_vec();
 
-                messages.push((SuperConnectionHandle::new_native(conn_id.unwrap()), byte_vec));
+                messages.push((ConnectionHandle::new_native(conn_id.unwrap()), byte_vec));
 
             }
 
@@ -189,7 +191,7 @@ impl NativeResourceTrait for NativeServer {
                 };
                 let conn_id_clone = conn_id.clone();
 
-                let handle = SuperConnectionHandle::new_native(conn_id.clone());
+                let handle = ConnectionHandle::new_native(conn_id.clone());
 
                 task_pool.spawn(tcp_add_to_msg_queue(tcp_read_socket, msg_rcv_queue, handle, max_packet_size));
 
@@ -254,7 +256,7 @@ impl NativeResourceTrait for NativeServer {
                     let conn = key_val_pair.value();
                     match conn.send_message.send(message_bin.clone()) {
                         Ok(()) => (),
-                        Err(error) => Err(SendMessageError::NotConnected)?,
+                        Err(_) => Err(SendMessageError::NotConnected)?,
                     }
 
                 }
@@ -265,7 +267,7 @@ impl NativeResourceTrait for NativeServer {
                     let conn = key_val_pair.value();
                     match conn.send_message.send(message_bin.clone()) {
                         Ok(()) => (),
-                        Err(error) => Err(SendMessageError::NotConnected)?,
+                        Err(_) => Err(SendMessageError::NotConnected)?,
                     }
 
                 }

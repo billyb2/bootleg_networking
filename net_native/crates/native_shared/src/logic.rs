@@ -1,3 +1,5 @@
+#![deny(clippy::all)]
+
 use crate::*;
 use crate::shared::DisconnectError;
 use std::fmt::Debug;
@@ -8,7 +10,7 @@ use tokio::io::AsyncReadExt;
 
 use turbulence::message_channels::{ChannelMessage, ChannelAlreadyRegistered};
 
-pub async fn tcp_add_to_msg_queue(mut read_socket: OwnedReadHalf, unprocessed_messages_recv_queue: RecvQueue, conn_id: SuperConnectionHandle, max_packet_size: usize) -> std::io::Result<()>{
+pub async fn tcp_add_to_msg_queue(mut read_socket: OwnedReadHalf, unprocessed_messages_recv_queue: RecvQueue, conn_id: ConnectionHandle, max_packet_size: usize) -> std::io::Result<()>{
     let mut buffer: Vec<u8> = vec![0; max_packet_size];
 
     loop {

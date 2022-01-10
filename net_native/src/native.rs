@@ -28,7 +28,7 @@ impl NativeNetResourceWrapper {
         NativeNetResourceWrapper::Client(NativeClient::new(task_pool))
     }
 
-    pub fn process_message_channel<T>(&self, channel_id: &MessageChannelID) -> Result<Vec<(SuperConnectionHandle, T)>, ChannelProcessingError> where T: ChannelMessage + Debug + Clone {
+    pub fn process_message_channel<T>(&self, channel_id: &MessageChannelID) -> Result<Vec<(ConnectionHandle, T)>, ChannelProcessingError> where T: ChannelMessage + Debug + Clone {
         let unprocessed_messages_recv_queue = match self {
             NativeNetResourceWrapper::Server(res) => Arc::clone(&res.unprocessed_message_recv_queue),
             NativeNetResourceWrapper::Client(res) => Arc::clone(&res.unprocessed_messages),
@@ -39,7 +39,7 @@ impl NativeNetResourceWrapper {
         let result = match unprocessed_messages_recv_queue.get_mut(channel_id) {
             Some(mut unprocessed_channel) => {
                 // Iterates through the channel while clearing it
-                let processed_messages: Result<Vec<(SuperConnectionHandle, T)>, ChannelProcessingError> = unprocessed_channel.drain(..).map(|(handle, message_bin) | {
+                let processed_messages: Result<Vec<(ConnectionHandle, T)>, ChannelProcessingError> = unprocessed_channel.drain(..).map(|(handle, message_bin) | {
                     match bincode::deserialize::<T>(&message_bin) {
                         Ok(msg) => Ok((handle, msg)),
                         Err(e) => Err(e.into()),
