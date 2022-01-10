@@ -86,22 +86,21 @@ impl NetworkResource {
         } 
     }
 
-    /// The WebRTC listen info is only necessary for naia 
-    /// The max_native_packet_size is only necessary for native builds
     /// Sets up listening for native servers
+    /// Recommended to read the documentation for ListenConfig and ConnectConfig before proceeding
+    /// The max_native_packet_size is only necessary for native builds
     #[cfg(feature = "native")]
-    pub fn listen(&mut self, tcp_addr: impl TokioToSocketAddrs + Send + Clone + 'static, udp_addr: impl TokioToSocketAddrs + Send + Clone + 'static, webrtc_listen_info: Option<(impl ToSocketAddrs + Send + 'static, impl ToSocketAddrs + Send + 'static, impl ToSocketAddrs + Send + 'static)>, max_native_packet_size: Option<usize>) {
+    pub fn listen<T, W>(&mut self, config: ListenConfig<T, W>, max_native_packet_size: Option<usize>)
+        where T: TokioToSocketAddrs + Send + Clone + 'static, W: ToSocketAddrs + Send + 'static{
         if self.is_server() {
             #[cfg(feature = "native")]
-            self.native.setup(tcp_addr, udp_addr, max_native_packet_size.unwrap());
+            self.native.setup(config.tcp_addr, config.udp_addr, max_native_packet_size.unwrap());
 
             let naia = self.naia.as_mut().unwrap();
 
-            let (naia_addr, webrtc_listen_addr, public_webrtc_listen_addr) = webrtc_listen_info.unwrap();
-
-            let naia_addr = naia_addr.to_socket_addrs().unwrap().next().unwrap();
-            let webrtc_listen_addr = webrtc_listen_addr.to_socket_addrs().unwrap().next().unwrap();
-            let public_webrtc_listen_addr = public_webrtc_listen_addr.to_socket_addrs().unwrap().next().unwrap();
+            let naia_addr = config.naia_addr.to_socket_addrs().unwrap().next().unwrap();
+            let webrtc_listen_addr = config.webrtc_listen_addr.to_socket_addrs().unwrap().next().unwrap();
+            let public_webrtc_listen_addr = config.public_webrtc_listen_addr.to_socket_addrs().unwrap().next().unwrap();
 
             naia.listen(naia_addr, Some(webrtc_listen_addr), Some(public_webrtc_listen_addr));
 
@@ -111,17 +110,20 @@ impl NetworkResource {
 
         }
 
+        self.is_setup = true;
+
     }
 
-    // TODO: Make this an impl ToSocketAddr
-    /// The first addr is either a TCP socket address, or a Naia address. The second address is always a UDP address, and is thus optional
-    pub fn connect(&mut self, addr: SocketAddr, udp_addr: Option<SocketAddr>, max_native_packet_size: Option<usize>) {
+    /// Connects to a server. Recommended to read the documentation for ListenConfig and ConnectConfig before proceeding
+    pub fn connect<M, U>(&mut self, config: ConnectConfig<M, U>, max_native_packet_size: Option<usize>)
+        where M: ConnectAddr, U: ConnectAddr {
         if self.is_client() {
             #[cfg(feature = "native")]
-            self.native.setup(addr, udp_addr.unwrap(), max_native_packet_size.unwrap());
+            self.native.setup(config.addr, config.udp_addr.unwrap(), max_native_packet_size.unwrap());
 
             #[cfg(feature = "web")]
             if let Some(naia) = self.naia.as_mut() {
+                let addr = config.addr.to_socket_addrs().unwrap().next().unwrap();
                 naia.connect(addr);
 
             }
@@ -130,6 +132,8 @@ impl NetworkResource {
             panic!("Tried to connect while server");
 
         }
+
+        self.is_setup = true;
 
     }
 
@@ -290,6 +294,11 @@ impl NetworkResource {
 
         }
 
+        if self.is_client() {
+            self.is_setup = false;
+
+        }
+
         Ok(())
 
     }
@@ -301,6 +310,11 @@ impl NetworkResource {
 
         if let Some(naia) = self.naia.as_mut() {
             naia.connections.clear()
+
+        }
+
+        if self.is_client() {
+            self.is_setup = false;
 
         }
 
@@ -421,4 +435,44 @@ fn rcv_naia_packets(super_net: Option<ResMut<NetworkResource>>, mut network_even
             }
         }
     }
+}
+
+/// The way of passing arguments for what ports the server should listen on
+#[cfg(feature = "native")]
+pub struct ListenConfig<T: TokioToSocketAddrs + Send + Clone + 'static, W: ToSocketAddrs + Send + 'static> {
+    /// The socket address for reliable messages
+    pub tcp_addr: T,
+    /// The socket address used for unreliable messages
+    pub udp_addr: T,
+    /// The address that naia clients will connect to
+    pub naia_addr: W,
+    /// Typically recommended to be the same IP address as public_webrtc_listen_addr and naia_addr, and that the port is random and unique
+    pub webrtc_listen_addr: W,
+    /// Typically recommended to be the same IP address as webrtc_listen_addr and naia_addr, and that the port is random and unique
+    pub public_webrtc_listen_addr: W,
+
+}
+
+/// Everything that a connection needs. On native, TokioToSocketAddrs is used, while on WASM, std's ToSocketAddrs is used
+#[cfg(feature = "native")]
+pub trait ConnectAddr: TokioToSocketAddrs + Send + Clone + 'static {}
+
+/// Everything that a connection needs. On native, TokioToSocketAddrs is used, while on WASM, std's ToSocketAddrs is used
+#[cfg(feature = "web")]
+pub trait ConnectAddr: ToSocketAddrs + Send + Clone + 'static {}
+
+#[cfg(feature = "web")]
+impl<T: ToSocketAddrs + Send + Clone + 'static> ConnectAddr for T {}
+
+#[cfg(feature = "native")]
+impl<T: TokioToSocketAddrs + Send + Clone + 'static> ConnectAddr for T {}
+
+#[derive(Clone)]
+/// The way of telling the client what socket addresses to connect to
+pub struct ConnectConfig<M: ConnectAddr, U: ConnectAddr> {
+    /// The main address to connect to. Should be either a tcp_addr or a naia_addr as specified in ListenConfig
+    pub addr: M,
+    /// When using a native client, this should be the UDP address of the server to connect to as specified in ListenConfig
+    /// On web builds, this can just be None
+    pub udp_addr: Option<U>,
 }

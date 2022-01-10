@@ -56,10 +56,24 @@ fn setup(mut commands: Commands, tokio_rt: Res<Runtime>, task_pool: Res<IoTaskPo
     // Listen on ports 9000 for TCP and 9001 for UDP, and 9003
     // The first address is the one that the connect() function needs to use, and the other two are for WebRTC
     // Finally, the last argument is the maximum size of each packet. That argument is only necessary for native builds
-    net.listen("127.0.0.1:9000", "127.0.0.1:9001", Some(("127.0.0.1:9003", "127.0.0.1:9004", "127.0.0.1:9004")), Some(2048));
+    let listen_config = ListenConfig {
+        tcp_addr: "127.0.0.1:9000",
+        udp_addr: "127.0.0.1:9001",
+        naia_addr: "127.0.0.1:9003",
+        webrtc_listen_addr: "127.0.0.1:9004",
+        public_webrtc_listen_addr: "127.0.0.1:9004",
+    };
+
+    net.listen(listen_config, Some(2048));
     // If we were calling net.connect, the first argument we would either have 9000 or 9003 as the port, depending on whether we were a native client or a web client
     // The second argument is only necessary on native builds, and it's asking for the UDP server SocketAddr
-    // net.connect(SocketAddr::new(Ipv4Addr::new(127, 0, 0, 1), 9000), Some(SocketAddr::new(Ipv4Addr::new(127, 0, 0, 1), 9001)), Some(2048));
+    /* let connect_config = ConnectConfig {
+     *      addr: "127.0.0.1:9000",
+     *      udp_addr: Some("127.0.0.1:9001"),
+     * };
+     *
+     * net.connect(connect_config, Some(2048));
+    */
 
     // We need to register for the native tcp/udp server and for naia seperately
     // Native registration
@@ -71,6 +85,7 @@ fn setup(mut commands: Commands, tokio_rt: Res<Runtime>, task_pool: Res<IoTaskPo
             .unwrap();
     });
 
+    /// Finally, insert the network resource so it can be used by other systems
     commands.insert_resource(net);
 
 }
@@ -79,7 +94,7 @@ fn setup(mut commands: Commands, tokio_rt: Res<Runtime>, task_pool: Res<IoTaskPo
 
 fn send(mut net: ResMut<NetworkResource>) {
     let message = String::from("Hello world");
-    net.broadcast_message::<String>(&message, &MESSAGE_CHANNEL_ID).unwrap();
+    net.broadcast_message(&message, &MESSAGE_CHANNEL_ID).unwrap();
 
 }
 
