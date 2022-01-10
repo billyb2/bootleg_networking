@@ -1,0 +1,21 @@
+[package]
+name = "native_shared"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1", features = ["rt-multi-thread", "io-util"], optional = true }
+
+bincode = { version = "1" }
+dashmap = { version = "4", features = ["rayon"], optional = true }
+
+# Just used for MessageChannel trait
+turbulence = { git = "https://github.com/billyb2/turbulence", branch = "v3_clone" }
+
+[features]
+native = [
+	"tokio",
+	"dashmap",
+]
+
+web = []

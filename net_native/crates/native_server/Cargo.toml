@@ -1,0 +1,11 @@
+[package]
+name = "native_server"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1", features = ["net", "parking_lot", "rt-multi-thread", "sync"] }
+bincode = { version = "1" }
+dashmap = { version = "4", features = ["rayon"] }
+
+native_shared = { path = "../native_shared" }

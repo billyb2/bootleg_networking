@@ -1,0 +1,29 @@
+[package]
+name = "net_native"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dashmap = { version = "4", features = ["rayon"], optional = true }
+
+# Not compiling all of Tokio, just it's useful async networking stuff
+tokio = { version = "1", features = ["parking_lot", "net"], optional = true }
+
+bincode = { version = "1" }
+
+native_server = { path = "crates/native_server", optional = true }
+native_client = { path = "crates/native_client", optional = true }
+native_shared = { path = "crates/native_shared" }
+
+[features]
+native = [
+	"dashmap",
+	"tokio",
+	"native_client",
+	"native_server",
+	"native_shared/native"
+
+]
+web = [
+	"native_shared/web"
+]

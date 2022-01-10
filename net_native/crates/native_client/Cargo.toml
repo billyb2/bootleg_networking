@@ -1,0 +1,14 @@
+[package]
+name = "native_client"
+version = "0.1.0"
+edition = "2021"
+
+
+[dependencies]
+arrayvec = { version = "0.7" }
+dashmap = { version = "4", features = ["rayon"] }
+tokio = { version = "1", features = ["net", "parking_lot", "rt-multi-thread", "sync", "io-util", "macros"] }
+bincode = { version = "1" }
+parking_lot = { version = "0.11" }
+
+native_shared = { path = "../native_shared" }
