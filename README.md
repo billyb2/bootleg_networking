@@ -53,7 +53,7 @@ fn main() {
 fn setup(mut commands: Commands, tokio_rt: Res<Runtime>, task_pool: Res<IoTaskPool>) {
     // First we need to actually initiate the NetworkReource. In this case, it's a server
     // We could use the new_client function if wanted a client
-    let mut net = NetworkResource::new_server(Some(Arc::clone(&tokio_rt)), task_pool.0.clone());
+    let mut net = NetworkResource::new_server(tokio_rt.clone(), task_pool.0.clone());
 
     // Next, we need tell the server to setup listening
     // The equivalent function for clients is connect
