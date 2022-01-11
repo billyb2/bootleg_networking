@@ -56,14 +56,15 @@ pub struct NetworkResource {
 /// Fake Tokio runtime struct used for web compatibility
 /// For example, you can use Res<Runtime> in Bevy without having to use optionals all the time
 #[cfg(feature = "web")]
+#[derive(Clone)]
 pub struct Runtime;
 
 impl NetworkResource {
     /// Constructs a new server, using both TCP and Naia
     #[cfg(feature = "native")]
-    pub fn new_server(tokio_rt: Option<Runtime>, task_pool: TaskPool) -> Self {
+    pub fn new_server(tokio_rt: Runtime, task_pool: TaskPool) -> Self {
         Self {
-            native: NativeNetResourceWrapper::new_server(tokio_rt.unwrap()),
+            native: NativeNetResourceWrapper::new_server(tokio_rt),
             naia: Some(NaiaNetworkResource::new(task_pool, None, MessageFlushingStrategy::OnEverySend, None, None)),
             is_server: true,
             is_setup: false,
@@ -71,10 +72,10 @@ impl NetworkResource {
     }
 
     /// Constructs a new client. On web builds it uses Naia, while on native builds it uses the custom built native_client
-    pub fn new_client(tokio_rt: Option<Runtime>, task_pool: TaskPool) -> Self {
+    pub fn new_client(tokio_rt: Runtime, task_pool: TaskPool) -> Self {
         Self {
             #[cfg(feature = "native")]
-            native: NativeNetResourceWrapper::new_client(tokio_rt.unwrap()),
+            native: NativeNetResourceWrapper::new_client(tokio_rt),
             // The match statement should be optimized out by the compiler
             #[cfg(feature = "native")]
             naia: None,
