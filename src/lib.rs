@@ -172,6 +172,8 @@ impl NetworkResource {
         self.native.broadcast_message(message, channel)?;
 
         if let Some(naia) = self.naia.as_mut() {
+            check_naia_message_len(message, channel)?;
+
             // Inlined version of naia.broadcast_message(), with some modifications
             if !naia.connections.is_empty() {
                 for (_handle, connection) in naia.connections.iter_mut() {
@@ -209,6 +211,7 @@ impl NetworkResource {
 
         } else {
             let naia = self.naia.as_mut().unwrap();
+            check_naia_message_len(message, channel)?;
 
             // Inlined version of naia.send_message(), with some modifications
             match naia.connections.get_mut(handle.naia()) {
@@ -435,6 +438,19 @@ fn rcv_naia_packets(super_net: Option<ResMut<NetworkResource>>, mut network_even
                 }
             }
         }
+    }
+}
+
+#[inline]
+fn check_naia_message_len<M>(message: &M, channel: &MessageChannelID) -> Result<(), SendMessageError> where M: ChannelMessage + Debug {
+    // Since WebRTC has a limit of how large messages can be of 1200 bytes, we limit the size of messages that naia can send to 1095 bytes (since overhead will make it add to 1200 bytes).
+    // We only do this check for naia since native builds can handle large messages
+    if generate_message_bin(message, channel).unwrap().len() > 1095 {
+        return Err(SendMessageError::MessageTooLarge)
+
+    } else {
+        Ok(())
+
     }
 }
 

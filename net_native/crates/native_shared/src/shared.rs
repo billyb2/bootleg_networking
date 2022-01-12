@@ -1,6 +1,7 @@
 #![deny(clippy::all)]
 
-// Some code that's needed by both net_native and super_net
+// Some code that's needed by both net_native and bootleg_networking
+use std::fmt::Debug;
 use std::net::SocketAddr;
 
 pub use turbulence::message_channels::{ChannelAlreadyRegistered, ChannelMessage};
@@ -31,7 +32,7 @@ pub enum SendMessageError {
     Mpsc(SendError<Vec<u8>>),
     NotConnected,
     MessageTypeUnregistered,
-
+    MessageTooLarge,
 }
 
 impl From<bincode::Error> for SendMessageError {
@@ -148,4 +149,23 @@ impl ConnID {
 #[derive(Debug)]
 pub enum DisconnectError {
     NotConnected,
+}
+
+pub fn generate_message_bin<T>(message: &T, channel: &MessageChannelID) -> Result<Vec<u8>, bincode::Error> where T: ChannelMessage + Debug {
+    let msg_bin = bincode::serialize(message)?;
+    // Add one extra byte to the message length for the channel ID
+    let msg_len: u32 = msg_bin.len().try_into().unwrap();
+
+    // 4 bytes for the length, 1 byte for the channel ID, the rest for the actual message
+    let mut final_message_bin = Vec::with_capacity(4 + 1 + msg_bin.len());
+
+    final_message_bin.extend_from_slice(&msg_len.to_be_bytes());
+    final_message_bin.push(channel.id);
+
+    final_message_bin.extend_from_slice(&msg_bin);
+
+    // Just a check to make sure we're properly encoding the message
+    debug_assert_eq!(usize::try_from(u32::from_be_bytes(final_message_bin.as_slice()[..4].try_into().unwrap())).unwrap(), final_message_bin.as_slice()[5..].len());
+
+    Ok(final_message_bin)
 }

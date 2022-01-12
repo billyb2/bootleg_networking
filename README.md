@@ -112,6 +112,9 @@ fn receive(mut net: ResMut<NetworkResource>) {
 
 }
 ```
+## Warning about sending messages larger than 1095 bytes
+@totalkrill noticed that when attempting to send a message larger than 1095 bytes, the message wouldn't go through. This is due to a limitation in WebRTC that doesn't allow messages larger than 1200 bytes (which 1095 bytes + any overhead in the WebRTC protocol and anything Naia adds would definetly do). The NetworkResource will return an error upon trying to send a message above that size when sending it through Naia, though there isn't an issue on the TCP/UDP front. Just be warned though, that if you're trying to have cross platform compatibility, messages should be under that size.
+
 
 ## If the crate isn't published on crates.io, how do I view the documentation?
 Simply run `cargo doc` in the terminal. If you want to view the documentation for the web version of this crate, then run `cargo doc --no-default-features --features web`
