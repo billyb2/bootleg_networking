@@ -52,4 +52,5 @@ pub trait NativeResourceTrait {
     fn send_message<T>(&self, message: &T, channel: &MessageChannelID, conn_id: &ConnID) -> Result<(), SendMessageError> where T: ChannelMessage + Debug;
     fn disconnect_from(&mut self, conn_id: &ConnID) -> Result<(), DisconnectError>;
     fn disconnect_from_all(&mut self);
+    fn rcv_disconnect_events(&self) -> Option<ConnID>;
 }

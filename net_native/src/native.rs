@@ -72,14 +72,16 @@ impl NativeNetResourceWrapper {
 
     pub fn is_server(&self) -> bool {
         #[cfg(feature = "native")]
-        match self {
+        let result = match self {
             NativeNetResourceWrapper::Server(_) => true,
             _ => false,
-        }
+        };
 
         // Web builds are never servers (for now)
         #[cfg(feature = "web")]
-        false
+        let result = false;
+
+        result
     }
 
     pub fn is_client(&self) -> bool {
@@ -131,6 +133,14 @@ impl NativeResourceTrait for NativeNetResourceWrapper {
             NativeNetResourceWrapper::Server(res) => res.disconnect_from_all(),
             NativeNetResourceWrapper::Client(res) => res.disconnect_from_all(),
         }
+    }
+
+    fn rcv_disconnect_events(&self) -> Option<ConnID> {
+        match self {
+            NativeNetResourceWrapper::Server(res) => res.rcv_disconnect_events(),
+            NativeNetResourceWrapper::Client(res) => res.rcv_disconnect_events(),
+        }
+
     }
 
 }

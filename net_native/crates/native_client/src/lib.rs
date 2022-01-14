@@ -4,6 +4,8 @@ use std::net::{SocketAddrV4, Ipv4Addr};
 use std::sync::Arc;
 use std::fmt::Debug;
 
+use crossbeam_channel::{Sender, Receiver, unbounded as crossbeam_unbounded};
+
 use dashmap::DashMap;
 
 use tokio::io::AsyncWriteExt;
@@ -24,11 +26,15 @@ pub struct NativeClient {
     pub udp_msg_sender: Arc<Mutex<Option<UnboundedSender<Vec<u8>>>>>,
     pub unprocessed_messages: RecvQueue,
     pub registered_channels: Arc<DashMap<MessageChannelID, ChannelType>>,
+    disconnect_event_sender: Sender<ConnID>,
+    disconnect_event_receiver: Receiver<ConnID>,
 
 }
 
 impl NativeClient {
     pub fn new(task_pool: Arc<Runtime>) -> Self {
+        let (disconnect_event_sender, disconnect_event_receiver) = crossbeam_unbounded();
+
         Self {
             task_pool,
             write_task_handle: None,
@@ -37,6 +43,8 @@ impl NativeClient {
             udp_msg_sender: Arc::new(Mutex::new(None)),
             unprocessed_messages: Arc::new(DashMap::new()),
             registered_channels: Arc::new(DashMap::new()),
+            disconnect_event_sender,
+            disconnect_event_receiver,
         }
     }
 }
@@ -57,15 +65,28 @@ impl NativeResourceTrait for NativeClient {
         let tcp_msg_sender_clone = Arc::clone(&self.tcp_msg_sender);
         let udp_msg_sender_clone = Arc::clone(&self.udp_msg_sender);
 
+        let disconnect_event_sender_clone = self.disconnect_event_sender.clone();
+
         self.task_pool.spawn(async move {
             let socket = TcpStream::connect(tcp_addr).await.unwrap();
             let peer_addr = socket.peer_addr();
+            let peer_addr_clone = {
+                let peer_addr = socket.peer_addr();
+                peer_addr.unwrap()
+
+            };
 
             let (read_socket, mut write_socket) = socket.into_split();
 
             let m_queue_clone = Arc::clone(&m_queue);
+            let disconnect_event_sender = disconnect_event_sender_clone.clone();
+
+            let conn_id = ConnID::new(0, peer_addr_clone, NativeConnectionType::Tcp);
+            let conn_id_clone = conn_id.clone();
 
             let send_loop = async move {
+                let disconnect_event_sender = disconnect_event_sender.clone();
+
                 tokio::select! {
                     _ = async move {
                         while let Some(message) = tcp_message_receiver.recv().await {
@@ -74,8 +95,15 @@ impl NativeResourceTrait for NativeClient {
                         }
                     } => (),
                     _ = async move {
+                         let disconnect_event_sender = disconnect_event_sender.clone();
+                         let conn_id = conn_id_clone.clone();
+
                         loop {
+                            let conn_id = conn_id.clone();
+
                             if clis_to_destroy.recv().await.is_some() {
+                                disconnect_event_sender.clone().send(conn_id).unwrap();
+
                                 *tcp_msg_sender_clone.lock() = None;
                                 *udp_msg_sender_clone.lock() = None;
                                 break;
@@ -83,7 +111,7 @@ impl NativeResourceTrait for NativeClient {
                             }
                         }
 
-                    } => println!("Successfully stopped sending"),
+                    } => (),
                 };
 
             };
@@ -257,6 +285,11 @@ impl NativeResourceTrait for NativeClient {
         self.disconnect_from_all();
 
         Ok(())
+
+    }
+
+    fn rcv_disconnect_events(&self) -> Option<ConnID> {
+        self.disconnect_event_receiver.try_recv().ok()
 
     }
 }

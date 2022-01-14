@@ -4,6 +4,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::fmt::Debug;
 use dashmap::DashMap;
+use crossbeam_channel::{Sender, Receiver, unbounded as crossbeam_unbounded};
 
 use tokio::io::AsyncWriteExt;
 use tokio::net::{TcpListener, ToSocketAddrs, UdpSocket};
@@ -24,11 +25,15 @@ pub struct NativeServer {
     pub unprocessed_message_recv_queue: RecvQueue,
     pub server_handle: Option<JoinHandle<()>>,
     pub next_uuid: Arc<AtomicU32>,
+    disconnect_event_sender: Sender<ConnID>,
+    disconnect_event_receiver: Receiver<ConnID>,
 
 }
 
 impl NativeServer {
     pub fn new(task_pool: Arc<Runtime>) -> Self {
+        let (disconnect_event_sender, disconnect_event_receiver) = crossbeam_unbounded();
+
         Self {
             task_pool,
             tcp_connected_clients: Arc::new(DashMap::new()),
@@ -39,6 +44,8 @@ impl NativeServer {
             unprocessed_message_recv_queue: Arc::new(DashMap::new()),
             registered_channels: Arc::new(DashMap::new()),
             next_uuid: Arc::new(AtomicU32::new(0)),
+            disconnect_event_sender,
+            disconnect_event_receiver,
         }
     }
 }
@@ -152,17 +159,20 @@ impl NativeResourceTrait for NativeServer {
 
         };
 
-      task_pool.spawn(async move {
+
+        let disconnect_event_sender = self.disconnect_event_sender.clone();
+
+        task_pool.spawn(async move {
             let tcp_conn_cli = tcp_connected_clients_clone_2;
             let udp_conn_cli = udp_connected_clients_clone_2;
 
             while let Some(cli) = clients_to_destroy.recv().await {
-                println!("Removing client!");
-
                 match cli.mode {
                     NativeConnectionType::Tcp => {tcp_conn_cli.remove(&cli);},
                     NativeConnectionType::Udp => {udp_conn_cli.remove(&cli);},
                 };
+
+                disconnect_event_sender.clone().send(cli).unwrap();
 
             }
 
@@ -362,6 +372,11 @@ impl NativeResourceTrait for NativeServer {
     fn disconnect_from_all(&mut self) {
         self.tcp_connected_clients.clear();
         self.udp_connected_clients.clear();
+
+    }
+
+    fn rcv_disconnect_events(&self) -> Option<ConnID> {
+        self.disconnect_event_receiver.try_recv().ok()
 
     }
 

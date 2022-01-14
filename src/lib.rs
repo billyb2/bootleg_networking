@@ -323,6 +323,26 @@ impl NetworkResource {
 
     }
 
+    /// Checks for any disconnect events on the tcp/udp side. Will always return None on WASM
+    /// Should be run in a loop to catch all disconnect events until it returns None, for example:
+    /// ```rust ignore
+    /// while let Some(disconnected_handle) = net.rcv_disconnect_events() {
+    ///     ...
+    /// }
+    /// ```
+    pub fn rcv_disconnect_events_native(&self) -> Option<ConnectionHandle> {
+        #[cfg(feature = "native")]
+        match self.native.rcv_disconnect_events() {
+            Some(conn_id) => Some(ConnectionHandle::Native(conn_id)),
+            None => None,
+
+        }
+
+        #[cfg(feature = "web")]
+        None
+
+    }
+
     /// Checks if it's a server
     pub fn is_server(&self) -> bool {
         self.is_server
