@@ -94,7 +94,6 @@ impl NetworkResource {
     pub fn listen<T, W>(&mut self, config: ListenConfig<T, W>, max_native_packet_size: Option<usize>)
         where T: TokioToSocketAddrs + Send + Clone + 'static, W: ToSocketAddrs + Send + 'static{
         if self.is_server() {
-            #[cfg(feature = "native")]
             self.native.setup(config.tcp_addr, config.udp_addr, max_native_packet_size.unwrap());
 
             let naia = self.naia.as_mut().unwrap();

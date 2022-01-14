@@ -160,13 +160,13 @@ impl NativeResourceTrait for NativeClient {
                     // If these differ, we read a corrupted message
                     // TODO: Error something
                     //assert_eq!(msg_len, num_bytes_read);
+                    
+                    if let Some(mut key_val_pair) = msg_rcv_queue.get_mut(&channel_id) {
+                        let messages = key_val_pair.value_mut();
+                        let byte_vec = msg_buffer.to_vec();
 
-                    let mut key_val_pair = msg_rcv_queue.get_mut(&channel_id).unwrap();
-                    let messages = key_val_pair.value_mut();
-
-                    let byte_vec = msg_buffer.to_vec();
-
-                    messages.push((ConnectionHandle::new_native(ConnID::new(0, udp_addr.clone(), NativeConnectionType::Udp)), byte_vec));
+                        messages.push((ConnectionHandle::new_native(ConnID::new(0, udp_addr.clone(), NativeConnectionType::Udp)), byte_vec))                    
+                    }
 
 
                 }
