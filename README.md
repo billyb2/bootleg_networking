@@ -8,14 +8,14 @@ Currently, the library is not published on crates.io, due to a few forks of othe
 
 ```toml
 [dependencies]
-bootleg_networking = { git = "https://github.com/billyb2/bootleg_networking" }
+bootleg_networking = { version = "0.2", git = "https://github.com/billyb2/bootleg_networking" }
 ```
 
 If you want to use this library with wasm, you should disable the native feature and enable the web feature
 
 ```toml
 [dependencies]
-bootleg_networking = { git = "https://github.com/billyb2/bootleg_networking", default-features = false, features = ["web"]}
+bootleg_networking = { version = "0.2", git = "https://github.com/billyb2/bootleg_networking", default-features = false, features = ["web"]}
 ```
 
 I recommend pinning to a specific commit, since there are currently no stability guarantees.
@@ -32,7 +32,13 @@ use bootleg_networking::*;
 const MESSAGE_CHANNEL_ID: MessageChannelID = MessageChannelID::new(0);
 const MESSAGE_SETTINGS: MessageChannelSettings = MessageChannelSettings {
     channel: MESSAGE_CHANNEL_ID.id,
-    channel_mode: MessageChannelMode::Unreliable,
+    channel_mode: MessageChannelMode::Unreliable {
+		settings: turbulence::unreliable_channel::Settings {
+			bandwidth: 4096,
+			burst_bandwidth: 1024,
+		},
+		max_message_len: 256,	
+	},
     message_buffer_size: 256,
     packet_buffer_size: 256,
 };

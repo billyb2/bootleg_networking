@@ -3,10 +3,11 @@
 
 #![doc = include_str!("../README.md")]
 
+use bevy_ecs::event::Events;
 use std::any::type_name;
 use std::sync::atomic;
 use std::fmt::Debug;
-use std::net::{SocketAddr, ToSocketAddrs};
+use std::net::ToSocketAddrs;
 #[cfg(feature = "native")]
 use std::sync::Arc;
 
@@ -16,7 +17,7 @@ use turbulence::{
     packet::{Packet as PoolPacket, PacketPool},
 };
 
-use bevy_app::{App, Events, Plugin};
+use bevy_app::{App, Plugin};
 use bevy_ecs::system::ResMut;
 use bevy_tasks::TaskPool;
 use bevy_networking_turbulence::*;
@@ -30,6 +31,7 @@ pub use bevy_networking_turbulence::{
     MessageChannelSettings,
     ReliableChannelSettings,
 };
+pub use turbulence;
 
 #[cfg(feature = "native")]
 use tokio::runtime::Builder;
@@ -72,7 +74,7 @@ impl NetworkResource {
     }
 
     /// Constructs a new client. On web builds it uses Naia, while on native builds it uses the custom built native_client
-    pub fn new_client(tokio_rt: Runtime, task_pool: TaskPool) -> Self {
+    pub fn new_client(tokio_rt: Runtime, _task_pool: TaskPool) -> Self {
         Self {
             #[cfg(feature = "native")]
             native: NativeNetResourceWrapper::new_client(tokio_rt),
@@ -81,7 +83,7 @@ impl NetworkResource {
             naia: None,
             // Web clients should
             #[cfg(feature = "web")]
-            naia: Some(NaiaNetworkResource::new(task_pool, None, MessageFlushingStrategy::OnEverySend, None, None)),
+            naia: Some(NaiaNetworkResource::new(_task_pool, None, MessageFlushingStrategy::OnEverySend, None, None)),
             is_server: false,
             is_setup: false,
         } 
@@ -236,7 +238,7 @@ impl NetworkResource {
     pub fn register_message_channel_native(&mut self, settings: MessageChannelSettings, channel: &MessageChannelID) -> Result<(), ChannelAlreadyRegistered> {
         #[cfg(feature = "native")]
         self.native.register_message(channel, match &settings.channel_mode {
-            MessageChannelMode::Unreliable => ChannelType::Unreliable,
+            MessageChannelMode::Unreliable { .. } => ChannelType::Unreliable,
             _ => ChannelType::Reliable,
 
         })?;
@@ -332,11 +334,7 @@ impl NetworkResource {
     /// ```
     pub fn rcv_disconnect_events_native(&self) -> Option<ConnectionHandle> {
         #[cfg(feature = "native")]
-        match self.native.rcv_disconnect_events() {
-            Some(conn_id) => Some(ConnectionHandle::Native(conn_id)),
-            None => None,
-
-        }
+        return self.native.rcv_disconnect_events().map(ConnectionHandle::Native);
 
         #[cfg(feature = "web")]
         None
@@ -465,7 +463,7 @@ fn check_naia_message_len<M>(message: &M, channel: &MessageChannelID) -> Result<
     // Since WebRTC has a limit of how large messages can be of 1200 bytes, we limit the size of messages that naia can send to 1095 bytes (since overhead will make it add to 1200 bytes).
     // We only do this check for naia since native builds can handle large messages
     if generate_message_bin(message, channel).unwrap().len() > 1095 {
-        return Err(SendMessageError::MessageTooLarge)
+        Err(SendMessageError::MessageTooLarge)
 
     } else {
         Ok(())

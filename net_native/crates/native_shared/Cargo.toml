@@ -7,10 +7,10 @@ edition = "2021"
 tokio = { version = "1", features = ["rt-multi-thread", "io-util"], optional = true }
 
 bincode = { version = "1" }
-dashmap = { version = "4", features = ["rayon"], optional = true }
+dashmap = { version = "5", features = ["rayon"], optional = true }
 
 # Just used for MessageChannel trait
-turbulence = { git = "https://github.com/billyb2/turbulence", branch = "v3_clone" }
+turbulence = { version = "0.4" }
 
 [features]
 native = [

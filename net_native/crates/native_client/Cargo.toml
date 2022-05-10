@@ -7,9 +7,9 @@ edition = "2021"
 [dependencies]
 arrayvec = { version = "0.7" }
 crossbeam-channel = { version = "0.5" }
-dashmap = { version = "4", features = ["rayon"] }
+dashmap = { version = "5", features = ["rayon"] }
 tokio = { version = "1", features = ["net", "parking_lot", "rt-multi-thread", "sync", "io-util", "macros"] }
 bincode = { version = "1" }
-parking_lot = { version = "0.11" }
+parking_lot = { version = "0.12" }
 
 native_shared = { path = "../native_shared" }

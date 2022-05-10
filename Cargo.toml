@@ -1,26 +1,26 @@
 [package]
 name = "bootleg_networking"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["William Batista <bootlegbilly@protonmail.ch>"]
 license = "MIT"
 
 [dependencies]
-bevy_app = { version = "0.6" }
-bevy_ecs = { version = "0.6" }
-bevy_tasks = { version = "0.6" }
+bevy_app = { version = "0.7" }
+bevy_ecs = { version = "0.7" }
+bevy_tasks = { version = "0.7" }
 
 # For creating an interface to bevy_networking_turbulence
-bevy_networking_turbulence = { git = "https://github.com/billyb2/bevy_networking_turbulence", branch = "publicized_06", default-features = false, features = ["use-webrtc"] }
+bevy_networking_turbulence = { git = "https://github.com/billyb2/bevy_networking_turbulence", branch = "publicized", default-features = false, features = ["use-webrtc"] }
 
 tokio = { version = "1", features = ["rt-multi-thread", "net"], optional = true }
-turbulence = { git = "https://github.com/billyb2/turbulence", branch = "v3_clone" }
+turbulence = { version = "0.4" }
 
 # For creating an interface to the TCP cli/serv
 net_native = { path = "net_native" }
 
 [dev-dependencies]
-bevy = { version = "0.6", default-features = false }
+bevy = { version = "0.7", default-features = false }
 
 [features]
 default = ["native"]

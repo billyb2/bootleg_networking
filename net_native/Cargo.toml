@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-dashmap = { version = "4", features = ["rayon"], optional = true }
+dashmap = { version = "5", features = ["rayon"], optional = true }
 
 # Not compiling all of Tokio, just it's useful async networking stuff
 tokio = { version = "1", features = ["parking_lot", "net"], optional = true }
