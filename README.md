@@ -18,7 +18,7 @@ If you want to use this library with wasm, you should disable the native feature
 bootleg_networking = { version = "0.2", git = "https://github.com/billyb2/bootleg_networking", default-features = false, features = ["web"]}
 ```
 
-I recommend pinning to a specific commit, since there are currently no stability guarantees.
+I recommend pinning to a specific version, since library stability can change at any time.
 
 Below is an example of how to use this library. It mainly shows how to setup a basic server, although a client is nearly identical
 
